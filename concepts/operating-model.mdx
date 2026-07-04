@@ -1,7 +1,7 @@
 ---
 title: "How Memory-Assisted Shaping Works: The Operating Model"
 sidebarTitle: "Operating Model"
-description: "Memory-Assisted Shaping splits GPT behavior into reading, shaping, and synthesis phases with an append-only Python persistence layer that GPT writes to but never manages."
+description: "Memory-Assisted Shaping uses three ordered phases and an append-only Python layer. GPT emits typed signals but never reads or manages live memory files."
 ---
 
 Memory-Assisted Shaping is a lightweight ChatGPT Projects protocol that imposes a behavioral contract on the model: read before shaping, shape before synthesis, and synthesize only after explicit operator (OP) approval. The model works on one active idea at a time and emits minimal typed memory signals to a write-only persistence layer. Python owns that layer completely — the model never reads, rewrites, or manages memory files during live shaping. Continuity survives session gaps through an append-only log that the model can query on demand, but never polls automatically.
@@ -70,7 +70,7 @@ When Python execution is available and `python3 -S ./notes.py init` is run at se
   <Card title="Operating States" icon="arrow-right-arrow-left" href="/concepts/operating-states">
     READING_ALIGNMENT, SHAPING, and SYNTHESIS — entry conditions, exit conditions, and what is forbidden in each state.
   </Card>
-  <Card title="Gates" icon="gate" href="/concepts/gates">
+  <Card title="Gates" icon="filter" href="/concepts/gates">
     How Memory-Assisted Shaping identifies, classifies, and resolves real gates before synthesis.
   </Card>
 </CardGroup>

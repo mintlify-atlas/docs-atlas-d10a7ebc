@@ -1,7 +1,7 @@
 ---
 title: "Memory Signals: Append-Only Continuity for Shaping Sessions"
 sidebarTitle: "Memory Signals"
-description: "Memory signals are minimal typed records GPT appends to preserve continuity. Python owns persistence — GPT emits signals but never reads or rewrites the memory log during shaping."
+description: "Memory signals are minimal typed records GPT appends to preserve continuity. Python owns persistence; the model never reads or rewrites the live log."
 ---
 
 Memory signals are minimal typed records appended to `session_notes.jsonl` only when omitting them would likely lose operational continuity across turns or session gaps. They exist to make later reinterpretation possible — to recover gates, decisions, discarded paths, shape movement, source boundaries, and artifact boundaries from the smallest possible payload. A memory signal is not a summary, not a working document, not artifact content, and not a progress report. If omitting a potential signal would not degrade continuity, the signal should not be emitted.

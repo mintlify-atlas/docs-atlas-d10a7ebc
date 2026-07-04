@@ -1,7 +1,7 @@
 ---
 title: "Operating States: READING_ALIGNMENT, SHAPING, SYNTHESIS"
 sidebarTitle: "Operating States"
-description: "Memory-Assisted Shaping uses three explicit operating states with strict entry and exit conditions to prevent premature synthesis and keep shaping separate from final artifact creation."
+description: "Three operating states govern every session move — READING_ALIGNMENT, SHAPING, and SYNTHESIS — each with strict entry, exit, and memory rules."
 ---
 
 Memory-Assisted Shaping defines exactly three operating states. Every session move takes place inside one of them. State transitions are governed by real conditions — not GPT momentum, conversational flow, or perceived readiness. Skipping a state, collapsing two states together, or entering SYNTHESIS without explicit OP approval are protocol failure conditions.

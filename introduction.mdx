@@ -1,7 +1,7 @@
 ---
 title: "Memory-Assisted Shaping: Keep Long ChatGPT Sessions Coherent"
 sidebarTitle: "Introduction"
-description: "Memory-Assisted Shaping is a ChatGPT Projects protocol that prevents session drift by tracking decisions, gates, and discarded paths with append-only memory signals."
+description: "A ChatGPT Projects protocol that prevents session drift by tracking decisions, open gates, discarded paths, and source boundaries with memory signals."
 ---
 
 Long ChatGPT conversations drift. Examples quietly become decisions. Discarded paths return as if they were never ruled out. Open questions disappear without resolution. The final output starts carrying process residue — shaping rationale, raw reasoning, and conversation history that was never meant to survive into the artifact. Memory-Assisted Shaping is a lightweight ChatGPT Projects protocol that gives GPT a small continuity layer to prevent exactly this. It keeps the shaping process separate from the final artifact without turning the conversation into note management.
