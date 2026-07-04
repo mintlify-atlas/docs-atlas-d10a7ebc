@@ -1,0 +1,74 @@
+---
+title: "Authority Order and Conflict Resolution Rules"
+sidebarTitle: "Authority Order"
+description: "Memory-Assisted Shaping defines a strict 7-level authority order for resolving conflicts between instructions, source material, memory signals, and inference."
+---
+
+When instructions, sources, memory signals, prior context, and inference conflict, Memory-Assisted Shaping resolves them by a strict authority order. This order prevents memory signals and inference from overriding what the operator actually wants.
+
+## Authority order
+
+1. OP current explicit instruction
+2. Current task scope
+3. Provided source or reference material
+4. This protocol
+5. Prior session context
+6. Prior memory signals as continuity context
+7. Inference
+
+## Key rules
+
+- **Prior context does not override the current task.** What the OP wants now takes precedence over what was established in earlier turns or sessions.
+- **Memory signals preserve continuity; they are never authority.** A memory signal is a continuity aid. It cannot override an OP instruction, a source, or the protocol.
+- **OP current instruction may invalidate, override, or obsolete any prior memory signal.** When the OP gives a new explicit instruction, prior signals that conflict with it lose authority.
+- **Inference does not override OP instruction, source material, gate status, or evidence status.** Inference may guide shaping but cannot finalize form, close gates, or override declared material.
+
+## Fail-closed conditions
+
+When an authority conflict affects any of the following, the protocol fails closed:
+
+- state transition
+- gate status
+- source of truth
+- evidence level
+- synthesis behavior
+- final artifact boundary
+
+**Fail closed means:** surface only the conflict required to continue, then stop until OP resolves it. Do not proceed by inference when the conflict touches one of these concerns.
+
+## Evidence levels
+
+Evidence levels describe the strength and origin of any claim during shaping. Claims at different evidence levels must not be treated as equivalent.
+
+<ResponseField name="DECLARED" type="evidence level">
+  Stated by OP, subject, or source. Not true by default — declared material is recorded as stated, not confirmed.
+</ResponseField>
+<ResponseField name="INFERRED" type="evidence level">
+  Deduced from structure, not observed or validated. Inference may guide shaping but cannot alone finalize form, close gates, or confirm decisions.
+</ResponseField>
+<ResponseField name="OBSERVED" type="evidence level">
+  Visible in behavior, artifact, history, repeated action, exception, resource allocation, or opacity. One observed instance is not a pattern.
+</ResponseField>
+<ResponseField name="VALIDATED" type="evidence level">
+  Confirmed by source, runtime, file, test, constraint, or mechanical check. The highest evidence level.
+</ResponseField>
+
+Memory signals may preserve inferred material. Later reinterpretation must keep inferred material inferential unless it is subsequently confirmed or validated.
+
+## Provenance labels
+
+Provenance labels identify who produced or confirmed a claim. They are internal by default — exposed only when needed to prevent ambiguity.
+
+<ResponseField name="OP" type="provenance label">
+  Stated or confirmed by the operator.
+</ResponseField>
+<ResponseField name="MODEL" type="provenance label">
+  Proposed by the model, not yet confirmed by OP.
+</ResponseField>
+<ResponseField name="SHARED" type="provenance label">
+  Jointly built and explicitly accepted by both OP and model.
+</ResponseField>
+
+<Tip>
+  If you find GPT drifting back to discarded paths or reopening settled decisions, the authority order is being violated. Ask GPT to state the current authority conflict explicitly and surface only what is needed to continue.
+</Tip>

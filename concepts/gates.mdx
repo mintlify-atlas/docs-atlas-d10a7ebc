@@ -1,0 +1,89 @@
+---
+title: "Real Gates: How Memory-Assisted Shaping Controls Synthesis"
+sidebarTitle: "Gates"
+description: "Gates are decision points that block or redirect shaping. Memory-Assisted Shaping classifies every gate as ASK, PROPOSE, DEFER, or STOP before asking the operator."
+---
+
+A real gate is a decision point that, if left unresolved, would make the final artifact wrong, unusable, or structurally misleading. Gates are not friction, uncertainty, or open questions in general. They are specific unresolved conditions that materially change the shape, scope, runtime, lifecycle, or source of truth of what is being built. Memory-Assisted Shaping requires GPT to classify every real gate before surfacing it to the OP — and to distinguish real gates from noise that should be resolved without OP input.
+
+## The gate test
+
+The protocol provides a single test for gate status:
+
+> "If unresolved, would the final artifact become wrong, unusable, or structurally misleading? If no, it is not a gate."
+
+A point is treated as a real gate only if it changes one or more of these seven axes:
+
+1. **Scope** — what the artifact covers or excludes
+2. **Hard constraints** — non-negotiable requirements that limit valid solutions
+3. **Runtime or host model** — the environment in which the artifact will operate
+4. **Persistence model** — how state, data, or memory is managed across time
+5. **Lifecycle** — how the artifact is created, changed, and retired
+6. **Source of truth** — which system, file, or authority owns a given concern
+7. **Success criteria** — what "correct" or "done" means for this artifact
+
+If an unresolved point does not change any of these axes, it is not a gate.
+
+## What is NOT a gate
+
+The protocol explicitly forbids treating the following as gates:
+
+- **Naming** — variable names, file names, labels, identifiers
+- **Formatting** — layout, indentation, whitespace, visual structure
+- **Cosmetic structure** — how content is organized for presentation without affecting behavior
+- **Minor implementation details** — choices between equivalent implementations with no behavioral difference
+- **Reversible choices** — decisions that can be changed later without structural cost
+
+These become gates **only** when they materially alter one of the seven real axes listed above. A formatting choice that changes how a source-of-truth boundary is expressed, for example, could become a real gate. A formatting choice that affects only appearance does not.
+
+Creating fake gates around non-gates is a protocol failure condition. It adds OP-facing drag without protecting artifact integrity.
+
+## Gate classification
+
+Before surfacing a real gate to the OP, GPT classifies it into one of four handling modes. Classification happens first — asking OP before classifying is not permitted.
+
+### ASK
+
+Use ASK when resolving the gate would change OP intent, scope, authority, or a non-reversible direction — and GPT cannot safely choose without OP input.
+
+- Ask a closed or bounded question. Open-ended questions that invite brainstorming are not valid gate-handling.
+- Ask only if the answer changes the next move. If the answer would not change what GPT does next, it is not worth asking.
+
+### PROPOSE
+
+Use PROPOSE when one option is clearly cheaper, simpler, safer, and reversible relative to alternatives.
+
+- State the chosen default explicitly.
+- State the operational reason — why this option is preferred under the current constraints.
+- Continue shaping. OP can override the proposed default at any point.
+
+### DEFER
+
+Use DEFER when the gate is real but not material to the current operating state. The shape can move forward without resolving it yet.
+
+- Mark the gate as deferred.
+- Continue shaping until the gate becomes material.
+- Never treat a deferred gate as closed.
+
+<Warning>
+  A deferred gate is never closed. If a gate was deferred during READING_ALIGNMENT or SHAPING, it must be explicitly resolved before SYNTHESIS. Entering SYNTHESIS with unresolved deferred gates is a protocol failure condition.
+</Warning>
+
+### STOP
+
+Use STOP when continuing would make the final artifact wrong, unusable, or structurally misleading — and the gate cannot be deferred or proposed around.
+
+- Stop immediately.
+- Surface only the single blocking gate. Do not surface other open questions alongside it.
+- Ask only what is required to unblock. Do not reopen adjacent gates while the blocking gate is active.
+
+## Memory signals for gates
+
+Gate classification determines whether a memory signal is warranted:
+
+- **ASK** — normally signal-worthy. An ASK gate represents an unresolved decision that affects OP intent or artifact direction and must be recoverable across session gaps.
+- **DEFER** — normally signal-worthy. A deferred gate must be preserved so it is not inadvertently treated as closed later.
+- **STOP** — normally signal-worthy. A STOP gate blocks synthesis entirely; its status must survive re-entry.
+- **PROPOSE** — generates a memory signal **only** when the proposed default affects later synthesis, source of truth, or persistence. A purely cosmetic or local PROPOSE does not require a signal.
+
+Gate signals use the `gate` signal type and carry the minimum text needed for later reinterpretation: what the gate is, its classification, and — for DEFER gates — its deferred status.

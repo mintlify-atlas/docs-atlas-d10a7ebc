@@ -1,0 +1,82 @@
+{
+  "projectType": "general",
+  "projectName": "Memory-Assisted Shaping",
+  "projectDescription": "A lightweight ChatGPT Projects protocol that keeps long idea-shaping sessions structurally coherent by using real operating gates, append-only memory signals, and strict separation between shaping notes and final artifacts.",
+  "theme": "luma",
+  "primaryColor": "#6366F1",
+  "lightColor": "#EEF2FF",
+  "darkColor": "#312E81",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guide",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/operating-model",
+              "concepts/operating-states",
+              "concepts/gates",
+              "concepts/memory-signals"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/session-workflow",
+              "guides/recap-and-export",
+              "guides/synthesis-and-artifacts"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Protocol Reference",
+            "pages": [
+              "reference/protocol-overview",
+              "reference/signal-types",
+              "reference/authority-order",
+              "reference/failure-conditions"
+            ]
+          },
+          {
+            "group": "CLI Reference",
+            "pages": [
+              "reference/notes-cli"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Append-only memory signals that preserve continuity without file-management drift",
+    "Three explicit operating states (READING_ALIGNMENT, SHAPING, SYNTHESIS) with strict transition rules",
+    "Real gate system that prevents premature synthesis and fake closure",
+    "Authority order that keeps current OP instruction dominant over memory signals and inference",
+    "Clean separation between internal shaping notes and final artifact output",
+    "Minimal Python helper (stdlib-only) for deterministic, timestamped note persistence",
+    "Eight typed memory signal categories (mode, shape, gate, decision, discard, tension, source, artifact)",
+    "Protocol-only fallback mode when Python execution is unavailable"
+  ],
+  "publicApiSurface": [
+    "python3 -S ./notes.py init",
+    "python3 -S ./notes.py append --type <type> --text <text> [--effect <effect>]",
+    "python3 -S ./notes.py tail [--limit <n>]",
+    "python3 -S ./notes.py summary",
+    "python3 -S ./notes.py export [--output <path>]",
+    "python3 -S ./notes.py --dir <session_dir> <command>",
+    "protocol.md — behavioral contract for GPT",
+    "note-io.md — I/O boundary contract between GPT and Python"
+  ]
+}

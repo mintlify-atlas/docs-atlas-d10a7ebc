@@ -1,20 +1,65 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Memory-Assisted Shaping: Structural Coherence for Long ChatGPT Sessions"
+sidebarTitle: "Home"
+description: "A lightweight ChatGPT Projects protocol that keeps long idea-shaping sessions coherent using real gates, append-only memory signals, and clean artifact separation."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Memory-Assisted Shaping is a behavioral protocol for ChatGPT Projects that prevents long idea-shaping sessions from drifting. It gives GPT a small, append-only continuity layer — tracking decisions, open gates, discarded paths, and source boundaries — so that shaping notes stay separate from the final artifact you actually want.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Introduction" icon="book-open" href="/introduction">
+    Understand what Memory-Assisted Shaping is, why it exists, and the problem it solves in long ChatGPT sessions.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up the protocol in your ChatGPT Project and run your first shaping session in minutes.
+  </Card>
+  <Card title="Core Concepts" icon="shapes" href="/concepts/operating-model">
+    Learn the operating model, states, gate system, and memory signal mechanics that power the protocol.
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/reference/notes-cli">
+    Full reference for every `notes.py` command, flag, and output format.
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## How it works
+
+Memory-Assisted Shaping consists of three files you add to a ChatGPT Project, plus a small Python helper for persistence.
+
+<Steps>
+  <Step title="Add the protocol files to your ChatGPT Project">
+    Upload `protocol.md`, `note-io.md`, and `notes.py` as project source files. GPT reads the protocol at session entry and follows its behavioral contract automatically.
+  </Step>
+  <Step title="Tell GPT to activate the protocol">
+    Open a new conversation and say: _"Read `protocol.md` and use GPT-Memory-Assisted Shaping for this session."_ GPT enters `READING_ALIGNMENT` mode and is ready to shape your idea.
+  </Step>
+  <Step title="Shape your idea — GPT tracks continuity">
+    Work normally. GPT emits minimal memory signals only when continuity would degrade without retention. The Python helper appends each signal with a timestamp, ID, and checksum.
+  </Step>
+  <Step title="Request a recap or final artifact when ready">
+    Ask for a recap at any point to recover current state. When the shape is ready and all gates are closed, explicitly approve synthesis to get a clean final artifact.
+  </Step>
+</Steps>
+
+<Note>
+  The protocol can also run in **protocol-only mode** if Python execution is unavailable. GPT will state that append-only persistence is not active and continue shaping without file writes.
+</Note>
+
+## Why this exists
+
+Long ChatGPT conversations drift. Examples become decisions. Discarded paths return. Open questions disappear. The final output starts carrying process residue — raw notes, internal reasoning, and shaping artifacts mixed into what should be a clean deliverable.
+
+Memory-Assisted Shaping solves this by:
+
+- Keeping **shaping notes separate** from the final artifact
+- Enforcing **explicit gate checks** before synthesis begins
+- Using an **append-only log** that GPT writes to but never rewrites or manages
+- Making the **authority order explicit** — your current instruction always wins over memory signals and inference
+
+<CardGroup cols={2}>
+  <Card title="Session Workflow" icon="diagram-project" href="/guides/session-workflow">
+    A complete walkthrough of a shaping session from start to final artifact.
+  </Card>
+  <Card title="Protocol Reference" icon="file-code" href="/reference/protocol-overview">
+    The full behavioral contract: states, gates, lenses, evidence rules, and failure conditions.
+  </Card>
+</CardGroup>

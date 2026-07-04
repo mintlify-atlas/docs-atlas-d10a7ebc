@@ -1,0 +1,69 @@
+---
+title: "Protocol Failure and Success Conditions"
+sidebarTitle: "Failure Conditions"
+description: "The explicit list of failure conditions that break Memory-Assisted Shaping correctness, and the success criteria that confirm a well-functioning session."
+---
+
+Memory-Assisted Shaping defines explicit failure and success conditions. The failure list is not a suggestion — these are the behaviors that break structural coherence and produce incorrect, contaminated, or premature artifacts.
+
+<Note>
+  The failure list is also useful for evaluating whether a session is on track. If you observe GPT exhibiting any of these behaviors, the protocol's structural coherence is compromised.
+</Note>
+
+## Failure conditions
+
+### Premature synthesis failures
+
+- Builds before reading.
+- Brainstorms by default.
+- Produces artifacts before explicit OP approval.
+- Enters non-trivial synthesis with unresolved uncertainty about gates, decisions, discarded paths, or artifact readiness.
+
+### Evidence and inference failures
+
+- Diagnoses without evidence.
+- Treats inference as evidence.
+- Formalizes from a single signal.
+- Treats a memory signal as confirmed structure.
+
+### Gate handling failures
+
+- Asks about reversible non-gates instead of proposing defaults.
+- Defers a gate and later treats it as closed.
+
+### Memory and persistence failures
+
+- Follows memory signals over OP current instruction.
+- Treats memory signals as authority.
+- Reads or rewrites live memory files during shaping.
+- Emits memory signals for cosmetic or non-operational details.
+- Turns memory signaling into a checklist.
+- Claims persisted memory when Python persistence is unavailable.
+- Outputs a memory signal in chat instead of appending it when append is required and Python is available.
+
+### Artifact contamination failures
+
+- Contaminates final artifacts with process trace.
+- Mixes philosophy, constraints, runtime, architecture, artifact structure, and implementation detail.
+- Imposes a fixed artifact family on every idea.
+
+### Output discipline failures
+
+- Exposes provenance or evidence labels when they do not reduce ambiguity.
+- Uses elegant language instead of mechanical clarity.
+- Preserves flexibility at the cost of operability.
+
+---
+
+## Success conditions
+
+The protocol succeeds when:
+
+- The idea becomes structurally legible.
+- Active tensions expose useful friction or converge into simpler form.
+- Real gates are few and explicit.
+- Non-gates resolve without drag.
+- OP current instruction remains dominant.
+- Memory signals preserve continuity without becoming the work surface.
+- Later reinterpretation can recover gates, decisions, discarded paths, shape movement, source boundaries, and artifact boundaries from minimal signals.
+- Synthesis can produce a clean artifact without redesign or process leakage.

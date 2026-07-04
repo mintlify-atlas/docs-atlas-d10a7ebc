@@ -1,0 +1,269 @@
+---
+title: "notes.py CLI Reference: Append-Only Session Memory"
+sidebarTitle: "notes.py"
+description: "Complete reference for all notes.py commands: init, append, tail, summary, and export. Includes flags, output formats, and the optional --dir override."
+---
+
+`notes.py` is the Python persistence helper for Memory-Assisted Shaping. It owns the append-only session log — GPT writes signals to it but never reads or rewrites the log during active shaping. Run all commands with `python3 -S` (no site packages). The tool is stdlib-only.
+
+<Note>
+  Always run with `python3 -S` (no site packages). The tool uses only Python standard library modules: `argparse`, `hashlib`, `json`, `os`, `uuid`, `datetime`, `pathlib`.
+</Note>
+
+---
+
+## Global flag
+
+### `--dir <path>`
+
+**Optional.** Override the base directory for session files. Defaults to the directory containing `notes.py`. All session files (`session_meta.json`, `session_notes.jsonl`, `session_export.json`) are created in this directory.
+
+```bash
+python3 -S ./notes.py --dir /path/to/session append --type decision --text "..."
+```
+
+---
+
+## Commands
+
+### `init`
+
+Creates `session_meta.json` and initializes the empty `session_notes.jsonl` log. Safe to run multiple times — if `session_meta.json` already exists with a valid `session_id`, it is not overwritten.
+
+**Usage**
+
+```bash
+python3 -S ./notes.py init
+```
+
+**Example output**
+
+```json
+{
+  "ok": true,
+  "command": "init",
+  "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "path": "/path/to/session_notes.jsonl"
+}
+```
+
+---
+
+### `append`
+
+Appends a memory signal to the session log. Requires `--type` and `--text`. Optionally includes `--effect`.
+
+<ParamField body="--type" type="string" required>
+  Signal type. Must be one of: `artifact`, `decision`, `discard`, `gate`, `mode`, `shape`, `source`, `tension`.
+</ParamField>
+
+<ParamField body="--text" type="string" required>
+  The signal content. Must be a non-empty string.
+</ParamField>
+
+<ParamField body="--effect" type="string">
+  Downstream shaping or synthesis effect. Use only when the effect changes later shaping or synthesis.
+</ParamField>
+
+**Usage**
+
+```bash
+python3 -S ./notes.py append --type decision --text "The final artifact is separate from shaping notes."
+```
+
+With `--effect`:
+
+```bash
+python3 -S ./notes.py append --type gate --text "Persistence model is deferred." --effect "Do not finalize the artifact until this is resolved."
+```
+
+**Example output**
+
+```json
+{
+  "ok": true,
+  "command": "append",
+  "note_id": "n00001",
+  "seq": 1,
+  "path": "/path/to/session_notes.jsonl"
+}
+```
+
+Python auto-assigns the following fields — do not include them in the `append` call:
+
+| Field | Description |
+|---|---|
+| `id` | Format: `n{seq:05d}` (e.g. `n00001`) |
+| `ts` | UTC ISO 8601 timestamp |
+| `session_id` | UUID from `session_meta.json` |
+| `seq` | Sequence number (position in log) |
+| `checksum` | First 16 hex characters of the SHA-256 digest of the record |
+
+---
+
+### `tail`
+
+Returns the most recent N records from the session log. Use for reviewing recent context during re-entry or before synthesis.
+
+<ParamField query="--limit" type="integer" default="5">
+  Number of recent records to return. Must be `>= 1`.
+</ParamField>
+
+**Usage**
+
+```bash
+python3 -S ./notes.py tail --limit 5
+```
+
+**Example output**
+
+```json
+{
+  "ok": true,
+  "command": "tail",
+  "count": 2,
+  "path": "/path/to/session_notes.jsonl",
+  "records": [
+    {
+      "id": "n00001",
+      "ts": "2025-01-15T10:23:45Z",
+      "session_id": "a1b2c3d4-...",
+      "seq": 1,
+      "type": "decision",
+      "text": "The final artifact is separate from shaping notes.",
+      "checksum": "a1b2c3d4e5f6a1b2"
+    },
+    {
+      "id": "n00002",
+      "ts": "2025-01-15T10:31:22Z",
+      "session_id": "a1b2c3d4-...",
+      "seq": 2,
+      "type": "gate",
+      "text": "Persistence model is deferred.",
+      "effect": "Do not finalize the artifact until this is resolved.",
+      "checksum": "b2c3d4e5f6a1b2c3"
+    }
+  ]
+}
+```
+
+---
+
+### `summary`
+
+Returns counts of records by type, total count, and the last signal. Useful for a quick session overview without reading the full log.
+
+**Usage**
+
+```bash
+python3 -S ./notes.py summary
+```
+
+**Example output**
+
+```json
+{
+  "ok": true,
+  "command": "summary",
+  "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "path": "/path/to/session_notes.jsonl",
+  "total": 7,
+  "by_type": {
+    "artifact": 1,
+    "decision": 3,
+    "discard": 1,
+    "gate": 1,
+    "mode": 0,
+    "shape": 1,
+    "source": 0,
+    "tension": 0
+  },
+  "last_note_id": "n00007",
+  "last_type": "artifact"
+}
+```
+
+---
+
+### `export`
+
+Exports the full session to a JSON file. Default output: `session_export.json` in the session directory.
+
+<ParamField query="--output" type="string">
+  Custom output file path. Defaults to `session_export.json` in the session directory.
+</ParamField>
+
+**Usage**
+
+```bash
+python3 -S ./notes.py export
+```
+
+With a custom path:
+
+```bash
+python3 -S ./notes.py export --output ./my-session-export.json
+```
+
+**Example output (receipt)**
+
+```json
+{
+  "ok": true,
+  "command": "export",
+  "record_count": 7,
+  "path": "/path/to/session_export.json"
+}
+```
+
+**Exported file structure**
+
+```json
+{
+  "schema_version": "shaping-memory-export.v0",
+  "exported_at": "2025-01-15T11:00:00Z",
+  "session": {
+    "schema_version": "shaping-memory-session-meta.v0",
+    "session_id": "a1b2c3d4-...",
+    "created_at": "2025-01-15T10:00:00Z",
+    "log_file": "/path/to/session_notes.jsonl"
+  },
+  "record_count": 7,
+  "records": []
+}
+```
+
+---
+
+## Error handling
+
+`notes.py` always returns JSON. On error, `ok` is `false` and `error` contains the message.
+
+```json
+{
+  "ok": false,
+  "error": "invalid type 'foo'; allowed: artifact, decision, discard, gate, mode, shape, source, tension"
+}
+```
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Unexpected error |
+| `2` | Usage or validation error |
+
+---
+
+## Session files
+
+`notes.py` creates and uses three files in the session directory:
+
+| File | Description |
+|---|---|
+| `session_meta.json` | Session metadata. Written once at `init`. Contains `schema_version`, `session_id` (UUID), `created_at`, and `log_file` path. |
+| `session_notes.jsonl` | The append-only log. One JSON record per line. Never rewritten by `notes.py`. |
+| `session_export.json` | Produced by the `export` command. A complete snapshot including all records. |
+
+<Warning>
+  Do not include `session_meta.json`, `session_notes.jsonl`, or `session_export.json` in the clean source package. These are session-specific files generated during use.
+</Warning>

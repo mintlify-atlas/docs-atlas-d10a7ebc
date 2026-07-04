@@ -1,0 +1,76 @@
+---
+title: "How Memory-Assisted Shaping Works: The Operating Model"
+sidebarTitle: "Operating Model"
+description: "Memory-Assisted Shaping splits GPT behavior into reading, shaping, and synthesis phases with an append-only Python persistence layer that GPT writes to but never manages."
+---
+
+Memory-Assisted Shaping is a lightweight ChatGPT Projects protocol that imposes a behavioral contract on the model: read before shaping, shape before synthesis, and synthesize only after explicit operator (OP) approval. The model works on one active idea at a time and emits minimal typed memory signals to a write-only persistence layer. Python owns that layer completely — the model never reads, rewrites, or manages memory files during live shaping. Continuity survives session gaps through an append-only log that the model can query on demand, but never polls automatically.
+
+## The two-layer design
+
+Memory-Assisted Shaping separates concerns between two layers that never share authority over each other's domain.
+
+**GPT layer — behavioral protocol and signal emission**
+
+GPT follows the shaping protocol (`protocol.md`) and the I/O contract (`note-io.md`). Its responsibilities are structural: read input, separate declared from inferred material, detect real gates, consolidate form, and produce final artifacts only after explicit OP approval. When an operational continuity risk arises — a confirmed decision, a real gate, a discarded path — GPT emits a minimal typed signal by running the append command. That is the full extent of GPT's memory work during live shaping.
+
+**Python layer — append-only persistence, timestamps, IDs, and checksums**
+
+`notes.py` owns persistence. When GPT runs the append command, Python adds the envelope: a sequential note ID (`n00001`, `n00002`, …), a UTC timestamp, the session ID, a sequence number, and a SHA-256 checksum of the record. Python appends the completed record to `session_notes.jsonl`, then returns a short receipt. Python does not infer meaning, reshape content, decide importance, or rewrite prior records during a live append.
+
+GPT does **not** read the live memory files after every turn, rewrite them, normalize them, repair them by inference, or let memory management interrupt OP-facing shaping. During shaping, live memory is write-only from GPT's perspective.
+
+## Authority order
+
+When instructions, sources, memory signals, prior context, and inference conflict, the protocol enforces a strict 7-level authority order:
+
+1. OP current explicit instruction
+2. Current task scope
+3. Provided source or reference material
+4. The protocol itself
+5. Prior session context
+6. Prior memory signals (as continuity context only)
+7. Inference
+
+OP current instruction is always at the top. Memory signals preserve continuity — they are never authority. A current OP instruction can invalidate, override, or obsolete any prior memory signal. Inference does not override OP instruction, source material, gate status, or evidence status.
+
+When an authority conflict affects state transition, gate status, source of truth, evidence level, synthesis behavior, or final artifact boundary, the protocol fails closed: surface only the conflict required to continue.
+
+See [Authority Order](/reference/authority-order) for full detail and the fail-closed rule.
+
+## The shaping cycle
+
+The protocol defines three ordered phases that must not be collapsed or skipped.
+
+**Read → Shape → Synthesize**
+
+1. **READING_ALIGNMENT** — GPT enters this state at session start, re-entry, or whenever input requires source or gate alignment. The goal is to understand the input, separate declared from inferred material, detect candidate form, expose material tension, and identify real gates. No final artifacts are produced here.
+
+2. **SHAPING** — Once the candidate shape and real gates are clear enough to work with, GPT moves to SHAPING. Here it consolidates form, resolves non-blocking friction, surfaces or closes gates, proposes reversible defaults, removes overdesign, protects source of truth, and prepares a possible artifact path. No final drafting happens in this state.
+
+3. **SYNTHESIS** — GPT enters SYNTHESIS only when the OP explicitly approves artifact production. Implied momentum, positive feedback, and silence are not approval. In SYNTHESIS, GPT produces the requested artifact from consolidated form without redesigning shape while writing.
+
+Final artifacts produced in SYNTHESIS are autonomous, operational, proportionate, clean, and usable without reinterpretation. They do not contain process notes, raw memory signals, discarded paths, shaping rationale, or conversation history.
+
+## Session files
+
+When Python execution is available and `python3 -S ./notes.py init` is run at session entry, three files are created in the package directory (or the directory specified by `--dir`):
+
+**`session_meta.json`** — Session metadata written once at initialization. Contains the session UUID (`session_id`), creation timestamp (`created_at`), schema version (`schema_version: "shaping-memory-session-meta.v0"`), and the absolute path to the log file (`log_file`).
+
+**`session_notes.jsonl`** — The append-only memory log. Each line is one complete JSON record representing a single memory signal. Records are never rewritten or deleted. This file is the persistence source of truth for memory signals; derived views (summary, export) are not.
+
+**`session_export.json`** — A full snapshot export produced on demand by running `python3 -S ./notes.py export`. Contains the session metadata, all records, a record count, and an `exported_at` timestamp. Used for OP-requested export, handoff, or full consolidation — not generated automatically.
+
+<Note>
+  Generated session files (`session_meta.json`, `session_notes.jsonl`, `session_export.json`) are live working artifacts for a single shaping session. They should not be committed as part of the clean source package.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Operating States" icon="arrow-right-arrow-left" href="/concepts/operating-states">
+    READING_ALIGNMENT, SHAPING, and SYNTHESIS — entry conditions, exit conditions, and what is forbidden in each state.
+  </Card>
+  <Card title="Gates" icon="gate" href="/concepts/gates">
+    How Memory-Assisted Shaping identifies, classifies, and resolves real gates before synthesis.
+  </Card>
+</CardGroup>

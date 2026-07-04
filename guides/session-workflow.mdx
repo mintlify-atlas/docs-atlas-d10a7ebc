@@ -1,0 +1,136 @@
+---
+title: "Running a Memory-Assisted Shaping Session End to End"
+sidebarTitle: "Session Workflow"
+description: "A complete walkthrough of a Memory-Assisted Shaping session: activating the protocol, shaping an idea through all three states, recapping state, and producing a final artifact."
+---
+
+This guide walks through a complete Memory-Assisted Shaping session — from activation through idea shaping to final artifact production. Each phase maps to one of the three operating states defined in `protocol.md`: `READING_ALIGNMENT`, `SHAPING`, and `SYNTHESIS`. Following this sequence ensures decisions are preserved, gates are tracked, and the final artifact is produced cleanly without process residue.
+
+<Steps>
+
+  ### Activate the protocol
+
+  Add the project files to your ChatGPT Project Source, then open a new session and tell GPT:
+
+  > Read `protocol.md` and use GPT-Memory-Assisted Shaping for this session.
+
+  On receiving this instruction, GPT reads both `protocol.md` and `note-io.md`, locates `notes.py`, and — if Python execution is available — runs the session initializer:
+
+  ```bash
+  python3 -S ./notes.py init
+  ```
+
+  This creates `session_meta.json` (with a unique session ID) and an empty `session_notes.jsonl` append log. If Python is unavailable, GPT states that protocol-only mode is active and append-only persistence is not running. GPT then enters `READING_ALIGNMENT` and waits for your input. It does not repeat the session-entry sequence on every turn.
+
+  ### Present your idea (READING_ALIGNMENT)
+
+  In `READING_ALIGNMENT`, GPT focuses on understanding — not producing. It reads your input carefully to:
+
+  - separate declared material from inferred material;
+  - detect candidate form (what the idea is trying to become);
+  - expose material tension;
+  - identify real gates — decision points where, if unresolved, the final artifact would become wrong, unusable, or structurally misleading.
+
+  GPT does **not** draft, brainstorm by default, or produce artifacts in this state. If a real gate is discovered, GPT may ask one bounded question — but only if the answer changes the next move.
+
+  While reading, GPT tracks:
+
+  - **Intended outcome** — what success looks like for this idea
+  - **Target operating model** — how the shaped result will actually be used
+  - **Non-negotiable constraints** — boundaries that cannot be changed without changing the idea
+  - **Known boundaries** — scope limits already established
+  - **Likely failure conditions** — structural risks that could make the artifact wrong or unusable
+
+  GPT exits `READING_ALIGNMENT` once the candidate shape and real gates are clear enough to begin shaping.
+
+  ### Shape the idea (SHAPING)
+
+  In `SHAPING`, GPT works to consolidate form without producing the final artifact. It:
+
+  - closes or defers gates;
+  - proposes reversible defaults where one option is clearly cheaper, simpler, and safer;
+  - removes overdesign;
+  - protects the source of truth;
+  - prepares a possible artifact path.
+
+  No final drafting occurs in this state.
+
+  When a decision, discarded path, gate movement, or source change would cause continuity to degrade without retention, GPT emits a memory signal. For example, a confirmed decision:
+
+  ```bash
+  python3 -S ./notes.py append --type decision --text "Persistence layer is append-only. No rewrites."
+  ```
+
+  When a gate is deferred — real but not yet material to the current move — GPT appends a gate signal with an effect that will constrain later synthesis:
+
+  ```bash
+  python3 -S ./notes.py append --type gate --text "Persistence model is deferred." --effect "Do not finalize the artifact until this is resolved."
+  ```
+
+  Memory signals are intentionally minimal. GPT does not emit them for cosmetic preferences, naming noise, or ordinary conversation — only for moments that affect continuity.
+
+  ### Check state before synthesis
+
+  Before requesting the final artifact, ask GPT to consolidate the current state. Useful prompts from the protocol:
+
+  - "Recap the internal notes."
+  - "Show me the current shape of the idea."
+  - "List decisions, open points, discarded paths, and artifact readiness."
+  - "Are there any gates still open before we write the final artifact?"
+
+  You can also run the CLI summary directly to get a count of signals by type and confirm the last recorded signal:
+
+  ```bash
+  python3 -S ./notes.py summary
+  ```
+
+  This is also the right moment to verify that no gates remain deferred unless you are comfortable proceeding without resolving them.
+
+  ### Approve synthesis explicitly
+
+  `SYNTHESIS` requires **explicit operator approval**. GPT will not enter synthesis based on implied momentum, positive feedback, or silence. You must actively approve the move to final artifact production.
+
+  Example approval phrases that work:
+
+  - "Write the final artifact."
+  - "Produce the artifact now."
+  - "Go ahead and synthesize."
+  - "I approve synthesis — write it."
+
+  Phrasing that does **not** count as approval: "That looks good," "Nice," "Keep going," or simply continuing the conversation without a direct instruction.
+
+  ### Receive the final artifact (SYNTHESIS)
+
+  Once synthesis is approved, GPT produces the requested artifact from the consolidated shape. The artifact is clean:
+
+  - no process notes;
+  - no conversation history;
+  - no raw memory signals;
+  - no discarded paths (unless you explicitly requested them);
+  - no shaping rationale;
+  - no drafting commentary;
+  - no meta-instructions used only during shaping.
+
+  Before non-trivial synthesis (long, branched, resumed, or uncertain shaping sessions), GPT runs a readback pass to consolidate state. After OP approval of non-trivial synthesis, it appends a mode signal:
+
+  ```bash
+  python3 -S ./notes.py append --type mode --text "Entering SYNTHESIS: OP approved."
+  ```
+
+  Then it produces the artifact — standalone, operational, proportionate, and usable without reinterpretation.
+
+</Steps>
+
+<Warning>
+  Never rely on silence or positive feedback as synthesis approval. The protocol requires an explicit instruction to produce the final artifact. Implied momentum — continuing the conversation, saying the shape looks good, or not objecting — is not approval. If GPT moves to synthesis without explicit instruction, that is a protocol failure.
+</Warning>
+
+<Tip>
+  For long or winding sessions with many branches, run the following before requesting the artifact to review the most recent signals and confirm nothing critical was missed:
+
+  ```bash
+  python3 -S ./notes.py tail --limit 10
+  ```
+
+  This is especially useful after resuming a paused session or after a major gate was deferred earlier in the conversation.
+</Tip>

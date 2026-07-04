@@ -1,47 +1,88 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with Memory-Assisted Shaping"
+sidebarTitle: "Quickstart"
+description: "Add Memory-Assisted Shaping to a ChatGPT Project in three steps and run your first coherent idea-shaping session."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This guide walks you through placing the three protocol files into a ChatGPT Project, initializing a session with the Python helper, activating the protocol in your conversation, and shaping your first idea without losing decisions, gates, or discarded paths along the way.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+
+  <Step title="Download the files">
+    Get `protocol.md`, `note-io.md`, and `notes.py` from the repository. Keep them together in a single directory. The recommended layout is:
+
+    ```text
+    memory-assisted-shaping/
+      README.md
+      protocol.md
+      note-io.md
+      notes.py
+    ```
+
+    Generated session files (`session_meta.json`, `session_notes.jsonl`, `session_export.json`) will be written into this same directory during use. Do not commit generated session files as part of the clean source package.
+  </Step>
+
+  <Step title="Add files to ChatGPT Project Source">
+    In ChatGPT Projects, add `protocol.md`, `note-io.md`, and `notes.py` as project source files. GPT reads all three at session start — the behavioral contract, the I/O boundary contract, and the Python helper — so it knows the protocol, the signal format, and where persistence lives before you say anything.
+  </Step>
+
+  <Step title="Initialize the session (optional Python)">
+    From the directory containing `notes.py`, run:
 
     ```bash
-    npm install your-package
+    python3 -S ./notes.py init
     ```
+
+    This creates `session_meta.json` with a UUID session ID and an empty `session_notes.jsonl` ready to receive signals. This step is optional — if you skip it, the first `append` call initializes the session automatically.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+
+  <Step title="Activate the protocol in your conversation">
+    Start your ChatGPT session and send this exact prompt:
+
+    > Read `protocol.md` and use GPT-Memory-Assisted Shaping for this session.
+
+    GPT reads the protocol, enters `READING_ALIGNMENT` state, locates `notes.py`, and is ready to shape your idea. It will not repeat the session entry procedure on every turn.
+  </Step>
+
+  <Step title="Shape your idea">
+    Work normally. Describe your idea, respond to GPT's questions, make decisions, and rule things out. GPT emits memory signals only when continuity is at risk — a real decision is confirmed, a gate opens or closes, a path is discarded, or the shape moves in a material direction. You will not see memory management interrupt the conversation; GPT hides receipts unless they are useful or you ask.
+
+    A typical append command that GPT would run internally looks like this:
 
     ```bash
-    your-cli init
+    python3 -S ./notes.py append --type decision --text "The final artifact is separate from shaping notes."
     ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+    When an effect needs to carry forward into later shaping or synthesis, GPT adds `--effect`:
 
     ```bash
-    your-cli start
+    python3 -S ./notes.py append --type gate --text "Persistence model is deferred." --effect "Do not finalize the artifact until this is resolved."
     ```
   </Step>
+
+  <Step title="Ask for a recap or final artifact">
+    At any point you can ask GPT to recover the current session state. Useful recap prompts from the README:
+
+    - *"Recap the internal notes."*
+    - *"Show me the current shape of the idea."*
+    - *"List decisions, open points, discarded paths, and artifact readiness."*
+    - *"Are there any gates still open before we write the final artifact?"*
+
+    When you are satisfied with the shape, give explicit approval and ask for the final artifact. GPT will produce a clean output — no process notes, no raw memory signals, no shaping rationale — from the consolidated shape.
+  </Step>
+
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+<Note>
+  **Protocol-only mode:** If Python execution is unavailable in your environment, GPT states once that append-only persistence is not active and then continues shaping normally under the protocol. Decisions, gates, and discarded paths are still tracked structurally in the conversation — they just will not be persisted to a JSONL log.
+</Note>
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+<Tip>
+  Before requesting the final artifact, run `summary` to verify the current session state and confirm that no gates are still open:
+
+  ```bash
+  python3 -S ./notes.py summary
+  ```
+
+  The summary returns the session ID, the total number of appended signals, a count broken down by signal type, and the most recent note. Reviewing this before synthesis helps you catch any unresolved gates or deferred decisions before they affect the artifact.
 </Tip>

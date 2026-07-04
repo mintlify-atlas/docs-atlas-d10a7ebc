@@ -1,0 +1,154 @@
+---
+title: "Recap, Summary, and Exporting Session State"
+sidebarTitle: "Recap & Export"
+description: "Learn when and how to recap session state, use the notes.py summary and tail commands, and export the full session log for handoff or audit."
+---
+
+Memory-Assisted Shaping separates live shaping from state recovery. During active shaping, memory is write-only — GPT emits minimal signals to Python and does not read them back between turns. Readback is triggered explicitly: by an operator request, a checkpoint, a re-entry after a pause, or synthesis preparation. This keeps the live conversation focused on shaping rather than file management.
+
+## When to recap
+
+Readback is allowed only under four conditions:
+
+1. **OP requests a recap** — you ask GPT to summarize decisions, gates, discarded paths, or the current shape of the idea.
+2. **OP requests an export or checkpoint** — you want a full snapshot of the session log for handoff, audit, or safekeeping.
+3. **Re-entry requires state recovery** — the session was paused or interrupted, and GPT needs to reconstruct context before continuing.
+4. **Synthesis preparation requires consolidated state** — before producing a non-trivial final artifact, GPT consolidates all signals to confirm gates, decisions, and artifact readiness.
+
+Readback commands do not run automatically. They are always intentional operations.
+
+## Recap via conversation
+
+The simplest way to recover session state is to ask GPT directly. Useful prompts:
+
+- "Recap the internal notes."
+- "Show me the current shape of the idea."
+- "List decisions, open points, discarded paths, and artifact readiness."
+- "Are there any gates still open before we write the final artifact?"
+
+When asked for a recap, GPT runs `summary` to get counts and the last signal, then runs `tail` if recent context is needed to reconstruct shape movement or gate status. It does not expose raw memory receipts or internal Python output unless you ask for them.
+
+## Using the CLI directly
+
+You can run readback commands yourself at any point. The three readback commands follow a natural order of depth.
+
+### summary
+
+Get a count of signals by type and confirm the last recorded signal:
+
+```bash
+python3 -S ./notes.py summary
+```
+
+Output shape:
+
+```json
+{
+  "ok": true,
+  "command": "summary",
+  "session_id": "<uuid>",
+  "path": "/path/to/session_notes.jsonl",
+  "total": 12,
+  "by_type": {
+    "artifact": 1,
+    "decision": 4,
+    "discard": 2,
+    "gate": 2,
+    "mode": 1,
+    "shape": 1,
+    "source": 0,
+    "tension": 1
+  },
+  "last_note_id": "n00012",
+  "last_type": "artifact"
+}
+```
+
+`summary` shows you how many signals exist, what types have been recorded, and the ID and type of the most recent entry. Use this to confirm the session is active and the log is growing as expected.
+
+### tail
+
+See the most recent records in the append log:
+
+```bash
+python3 -S ./notes.py tail --limit 5
+```
+
+Output shape:
+
+```json
+{
+  "ok": true,
+  "command": "tail",
+  "count": 5,
+  "path": "/path/to/session_notes.jsonl",
+  "records": [
+    {
+      "id": "n00008",
+      "ts": "2025-01-15T14:22:10Z",
+      "session_id": "<uuid>",
+      "seq": 8,
+      "type": "gate",
+      "text": "Persistence model is deferred.",
+      "effect": "Do not finalize the artifact until this is resolved.",
+      "checksum": "a1b2c3d4e5f60718"
+    }
+  ]
+}
+```
+
+`tail` returns up to `--limit` records from the end of the log, in append order. Each record includes the signal ID, timestamp, session ID, sequence number, type, text, an optional effect, and a checksum. Use `tail` to confirm recent decisions, check gate status, or review discarded paths before synthesis.
+
+### export
+
+Produce a full snapshot of the session as a single JSON file:
+
+```bash
+python3 -S ./notes.py export
+```
+
+With a custom output path:
+
+```bash
+python3 -S ./notes.py export --output ./my-session-export.json
+```
+
+The export file contains:
+
+- `schema_version` — `"shaping-memory-export.v0"`
+- `exported_at` — UTC timestamp of the export
+- `session` — the full session metadata from `session_meta.json` (session ID, created at, log file path)
+- `record_count` — total number of records exported
+- `records` — the full append log as an array of record objects
+
+Use `export` for handoff to a collaborator, auditing a completed session, archiving state before starting a new session on the same idea, or producing a full continuity snapshot before a long break.
+
+## Re-entry flow
+
+When resuming a session that was paused or interrupted, tell GPT to read the protocol again and run `summary`:
+
+> Read `protocol.md` and resume the session. Run summary to recover state.
+
+GPT re-enters `READING_ALIGNMENT` and uses the log to reconstruct:
+
+- open and deferred gates;
+- confirmed decisions;
+- discarded paths (and why they were discarded);
+- shape movement since the session began;
+- source-of-truth boundaries.
+
+It does not re-read `note-io.md` unnecessarily, but it will use `tail` if recent signals are needed to recover the precise shape before the session was paused.
+
+<Note>
+  Derived views — `summary`, `tail`, and `export` — are not the source of truth. They are read projections over the underlying append log. The append log `session_notes.jsonl` is the persistence source. If a derived view looks inconsistent, read the raw log directly to verify.
+</Note>
+
+<Tip>
+  If your session files are not in the same folder as `notes.py`, use `--dir` to specify the session directory for any command:
+
+  ```bash
+  python3 -S ./notes.py --dir /path/to/session summary
+  ```
+
+  `--dir` works with all commands: `init`, `append`, `tail`, `summary`, and `export`. It does not change the default behavior — it is an override for cases where the package was extracted to a different location from where you are running commands.
+</Tip>

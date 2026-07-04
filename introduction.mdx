@@ -1,0 +1,50 @@
+---
+title: "Memory-Assisted Shaping: Keep Long ChatGPT Sessions Coherent"
+sidebarTitle: "Introduction"
+description: "Memory-Assisted Shaping is a ChatGPT Projects protocol that prevents session drift by tracking decisions, gates, and discarded paths with append-only memory signals."
+---
+
+Long ChatGPT conversations drift. Examples quietly become decisions. Discarded paths return as if they were never ruled out. Open questions disappear without resolution. The final output starts carrying process residue — shaping rationale, raw reasoning, and conversation history that was never meant to survive into the artifact. Memory-Assisted Shaping is a lightweight ChatGPT Projects protocol that gives GPT a small continuity layer to prevent exactly this. It keeps the shaping process separate from the final artifact without turning the conversation into note management.
+
+## How it works
+
+GPT follows a behavioral protocol that keeps it in one of three operating states — `READING_ALIGNMENT`, `SHAPING`, or `SYNTHESIS`. At any moment during a session, GPT is either reading and aligning on the idea, actively shaping it, or (only after explicit approval) producing the final artifact. When continuity would degrade without retention — a real decision was made, a path was discarded, a gate opened — GPT emits a minimal memory signal. A Python helper appends the signal to an append-only log. GPT never rewrites or manages the memory files; Python owns persistence entirely.
+
+The memory signal carries only what is operationally necessary: a type, a short text, and an optional effect. Python adds the timestamp, a unique note ID, the session ID, a sequence number, and a checksum. The model treats live memory as write-only during shaping; readback happens only when you ask for a recap, at re-entry, or before synthesis.
+
+## Key components
+
+<CardGroup cols={2}>
+  <Card title="protocol.md" icon="file-contract">
+    The behavioral contract GPT follows during a session. Defines the three operating states, authority order, shaping principles, gate handling, memory signal rules, output discipline, and synthesis requirements.
+  </Card>
+  <Card title="note-io.md" icon="arrows-left-right">
+    The I/O boundary contract between GPT and the Python persistence layer. Defines when and how GPT may emit a memory signal, the command set, the receipt format, and live read restrictions.
+  </Card>
+  <Card title="notes.py" icon="python">
+    The Python persistence helper that owns append-only storage. Runs with `python3 -S`. Handles `init`, `append`, `tail`, `summary`, and `export` — all using the standard library only.
+  </Card>
+  <Card title="Session files" icon="folder-open">
+    Generated during use: `session_meta.json` (UUID session ID and metadata), `session_notes.jsonl` (the append-only signal log), and `session_export.json` (produced on demand). Not part of the clean source package.
+  </Card>
+</CardGroup>
+
+## What the protocol tracks
+
+GPT tracks only what affects continuity — not everything in the conversation:
+
+- **Decisions** — confirmed choices that affect the shape of the idea or the final artifact
+- **Open gates** — real decision points whose resolution would change scope, constraints, runtime, lifecycle, source of truth, or success criteria
+- **Discarded paths** — directions that were ruled out and are likely to return if not recorded
+- **Source boundaries** — changes in the source of truth or conflicts between sources
+- **Artifact readiness** — the boundary between shaping and synthesis, and whether the shape is stable enough to produce a final artifact
+
+Items that do not affect any of these axes — naming noise, cosmetic preferences, ordinary conversation — do not generate memory signals.
+
+## What you get
+
+The final artifact produced at the end of a session is clean. It does not contain process notes, conversation history, raw memory signals, discarded paths, shaping rationale, or drafting commentary. The protocol keeps shaping notes structurally separate from artifact content throughout the entire session. GPT produces the final artifact only after you give explicit approval — implied momentum, positive feedback, and silence are not approval.
+
+<Note>
+  Memory-Assisted Shaping was designed for ChatGPT Projects, where `protocol.md`, `note-io.md`, and `notes.py` are added as project source files that GPT reads at session start. The Python helper (`notes.py`) runs anywhere Python 3 is available and uses only the standard library. If Python execution is unavailable, GPT enters protocol-only mode and states once that append-only persistence is not active — shaping continues normally.
+</Note>

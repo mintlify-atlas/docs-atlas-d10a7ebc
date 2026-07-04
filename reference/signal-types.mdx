@@ -1,0 +1,231 @@
+---
+title: "Memory Signal Types Reference"
+sidebarTitle: "Signal Types"
+description: "Reference for all eight memory signal types in Memory-Assisted Shaping: mode, shape, gate, decision, discard, tension, source, and artifact — with usage rules and examples."
+---
+
+Memory-Assisted Shaping defines exactly eight signal types. Each type maps to a specific protocol semantic. No other types are valid in v0. If a signal does not fit one of these types, GPT does not append and continues shaping.
+
+## Signal types
+
+### mode
+
+Records a state transition between operating states (e.g., entering `SYNTHESIS` after OP approval).
+
+Emitted when GPT transitions between operating states. This is a strong trigger — a `mode` signal must be appended before non-trivial synthesis when Python persistence is available.
+
+<ParamField path="type" type="string">
+  Always `mode`.
+</ParamField>
+<ParamField path="text" type="string">
+  The state transition being recorded (e.g., `"Entering SYNTHESIS after OP approval of artifact direction."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. Downstream shaping or synthesis effect of the transition (e.g., `"Synthesis must not reopen gate on persistence model."`).
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type mode --text "Entering SYNTHESIS after OP approval." --effect "Do not reopen shape gate."
+```
+
+---
+
+### shape
+
+Records a change in what the input is becoming — a shift in candidate form.
+
+Emitted when the shape of the idea materially changes during shaping. A shape signal preserves the movement so later reinterpretation can recover the path.
+
+<ParamField path="type" type="string">
+  Always `shape`.
+</ParamField>
+<ParamField path="text" type="string">
+  Description of the shape change (e.g., `"Input shifted from workflow to protocol."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. Impact on later shaping or artifact direction.
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type shape --text "Input shifted from workflow to protocol." --effect "Artifact family is now a behavioral contract, not a runbook."
+```
+
+---
+
+### gate
+
+Records a real gate being opened, deferred, or closed.
+
+One of the strongest signal triggers. A gate signal should include an `effect` when the gate affects later synthesis. A deferred gate must never be treated as closed — the signal preserves that distinction.
+
+<ParamField path="type" type="string">
+  Always `gate`.
+</ParamField>
+<ParamField path="text" type="string">
+  The gate and its current status (e.g., `"Persistence model gate opened — file vs. database unresolved."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional but strongly recommended. How an unresolved or deferred gate affects synthesis (e.g., `"Artifact must not hardcode storage layer until gate is closed."`).
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type gate --text "Persistence model gate deferred — file vs. database unresolved." --effect "Artifact must not hardcode storage layer."
+```
+
+---
+
+### decision
+
+Records an OP-confirmed decision.
+
+This is a strong trigger. The decision must be OP-confirmed — not model-inferred. A `decision` signal prevents confirmed choices from being reopened or reversed during later shaping.
+
+<ParamField path="type" type="string">
+  Always `decision`.
+</ParamField>
+<ParamField path="text" type="string">
+  The confirmed decision (e.g., `"OP confirmed: append-only log as persistence model."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. Downstream constraint imposed by the decision.
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type decision --text "OP confirmed: append-only log as persistence model." --effect "No in-place record updates permitted in artifact."
+```
+
+---
+
+### discard
+
+Records a path that was considered and rejected.
+
+Emitted for discarded paths that are likely to return, in order to prevent them from re-emerging in later shaping. Does not need to be emitted for every rejected option — only paths with re-emergence risk.
+
+<ParamField path="type" type="string">
+  Always `discard`.
+</ParamField>
+<ParamField path="text" type="string">
+  The discarded path and the reason for rejection (e.g., `"Discarded bidirectional sync — too much coordination overhead."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. Why this path should not be re-raised (e.g., `"Do not reopen — conflicts with append-only constraint."`).
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type discard --text "Discarded bidirectional sync — too much coordination overhead." --effect "Do not reopen — conflicts with append-only constraint."
+```
+
+---
+
+### tension
+
+Records material tension between lenses that affects the form.
+
+Emitted only when the tension is material and likely to recur — not for noise. A tension signal that does not change form, constraint, source of truth, runtime, lifecycle, evidence requirement, gate status, or final output is not signal-worthy.
+
+<ParamField path="type" type="string">
+  Always `tension`.
+</ParamField>
+<ParamField path="text" type="string">
+  Description of the tension and which lenses are in conflict (e.g., `"IMPLEMENTATION and ARTIFACT lenses conflict on output verbosity — operability vs. readability."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. How the unresolved tension may affect synthesis or artifact form.
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type tension --text "IMPLEMENTATION vs ARTIFACT: runtime verbosity conflicts with standalone usability." --effect "Artifact form will need to resolve before SYNTHESIS."
+```
+
+---
+
+### source
+
+Records a source-of-truth change or boundary.
+
+Emitted when the canonical source for a concern changes or a conflict between sources is identified. Preserves which authority governs which concern so later synthesis does not introduce duplication or hidden fallback logic.
+
+<ParamField path="type" type="string">
+  Always `source`.
+</ParamField>
+<ParamField path="text" type="string">
+  The source-of-truth change or boundary (e.g., `"protocol.md is canonical for behavioral rules; note-io.md is canonical for I/O contract only."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. How the boundary affects later shaping or artifact structure.
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type source --text "protocol.md is canonical for behavioral rules; note-io.md governs I/O only." --effect "Do not duplicate behavioral rules in note-io.md."
+```
+
+---
+
+### artifact
+
+Records artifact boundaries, direction, or readiness.
+
+Emitted to preserve what the artifact is and is not before `SYNTHESIS`. Ensures synthesis produces a clean artifact without redesign and without contamination from process trace.
+
+<ParamField path="type" type="string">
+  Always `artifact`.
+</ParamField>
+<ParamField path="text" type="string">
+  The artifact boundary or direction (e.g., `"Artifact is a behavioral contract (AI_ONLY). Excluded: implementation code, conversation history, shaping rationale."`).
+</ParamField>
+<ParamField path="effect" type="string">
+  Optional. Constraint on synthesis (e.g., `"Synthesis must not include process notes or raw shaping trace."`).
+</ParamField>
+
+```bash Example
+python3 -S ./notes.py append --type artifact --text "Artifact is a behavioral contract. Excluded: implementation code, conversation history, shaping rationale." --effect "Synthesis must not include process notes."
+```
+
+---
+
+## Signal fields
+
+Python adds the following fields automatically on every append. The model sends only `type`, `text`, and optionally `effect`.
+
+<ResponseField name="id" type="string">
+  Auto-assigned by Python. Format: `n{seq:05d}` (e.g., `n00001`).
+</ResponseField>
+<ResponseField name="ts" type="string">
+  UTC timestamp in ISO 8601 format, assigned at append time.
+</ResponseField>
+<ResponseField name="session_id" type="string">
+  UUID assigned at session init via `python3 -S ./notes.py init`.
+</ResponseField>
+<ResponseField name="seq" type="integer">
+  Monotonically increasing sequence number within the session.
+</ResponseField>
+<ResponseField name="type" type="string">
+  One of the eight allowed types: `mode`, `shape`, `gate`, `decision`, `discard`, `tension`, `source`, `artifact`.
+</ResponseField>
+<ResponseField name="text" type="string">
+  The signal content. Must be non-empty.
+</ResponseField>
+<ResponseField name="effect" type="string">
+  Optional. Downstream shaping or synthesis effect. Use only when the effect changes later shaping or synthesis.
+</ResponseField>
+<ResponseField name="checksum" type="string">
+  First 16 hex characters of the SHA-256 of the record, excluding the checksum field itself.
+</ResponseField>
+
+## What signals are NOT
+
+Memory signals are not any of the following:
+
+- **Model-managed notes** — the model does not own the memory file.
+- **Summaries** — signals preserve minimal operational continuity, not narrative recaps.
+- **Artifact content** — signals must not leak into final artifacts as process trace.
+- **Source of truth** — the append log is a continuity aid, not a design document.
+- **A checklist** — signals are not task tracking or progress markers.
+- **Model self-commentary** — signals record protocol-relevant events, not GPT's internal reasoning.
+
+Memory signals preserve operational continuity — nothing more.
+
+<Warning>
+  GPT must not emit memory signals for cosmetic preferences, naming decisions, unconfirmed examples, ordinary conversation, or repeated information.
+</Warning>

@@ -1,0 +1,98 @@
+---
+title: "Synthesis and Final Artifact Production"
+sidebarTitle: "Synthesis"
+description: "Memory-Assisted Shaping produces final artifacts only after explicit approval. Learn the synthesis conditions, artifact discipline rules, and how to get a clean final output."
+---
+
+In Memory-Assisted Shaping, synthesis is the phase where GPT produces the final artifact. It is the only phase where artifacts are produced, and it requires explicit operator approval — not implied momentum. The protocol keeps shaping and synthesis strictly separated so the final output is never contaminated by process notes, open questions, or discarded paths from earlier in the session.
+
+## Synthesis conditions
+
+`SYNTHESIS` is entered only when the operator explicitly approves artifact production. The protocol is unambiguous about what does **not** count as approval:
+
+- **Implied momentum** — the conversation is going well, so GPT keeps going.
+- **Positive feedback** — saying "that looks right," "nice," or "I like this direction."
+- **Silence** — not objecting to GPT's shaping output.
+
+None of these trigger synthesis. Only a direct instruction does.
+
+Once synthesis is approved, GPT produces the artifact from the consolidated shape. It does not redesign while writing, reopen closed gates, or treat deferred gates as resolved.
+
+## What a final artifact contains
+
+A final artifact contains exactly one thing: **the shaped, consolidated form you requested**.
+
+A final artifact **never** contains:
+
+- process notes
+- conversation history
+- raw memory signals
+- discarded paths (unless you explicitly asked for an audit-style document that includes them)
+- shaping rationale
+- operator-facing drafting commentary
+- explanation of why the artifact is good
+- meta-instructions used only during shaping
+
+The artifact is autonomous and usable on its own. A reader who has not seen the shaping session should be able to pick it up and use it without needing to interpret or reconstruct anything from the conversation.
+
+## Pre-synthesis readback
+
+Before non-trivial synthesis — long sessions, branched sessions, resumed sessions, or sessions where uncertainty existed during shaping — GPT runs a readback pass to consolidate state. This happens before writing begins, not during.
+
+The readback sequence:
+
+```bash
+python3 -S ./notes.py summary
+python3 -S ./notes.py tail --limit 10
+```
+
+`summary` gives a count of signals by type and confirms the last recorded signal. `tail` shows the most recent entries in append order, which lets GPT verify gate status, confirm decisions, and check that no discarded path is being accidentally reintroduced.
+
+After OP approves non-trivial synthesis and Python persistence is active, GPT appends a mode signal before writing:
+
+```bash
+python3 -S ./notes.py append --type mode --text "Entering SYNTHESIS: OP approved."
+```
+
+Then it produces the artifact. The mode signal marks the transition in the append log so the session record reflects when synthesis was authorized and where artifact production began.
+
+## Artifact families
+
+The protocol does not impose a fixed artifact family on every idea. The shaped form determines what the artifact should be. Depending on what was shaped, the final artifact might be:
+
+- a **system** definition
+- an **architecture** document
+- a **workflow** or process description
+- a **protocol** (like this one)
+- a **product behavior** specification
+- an **artifact family** definition
+- an **operating model**
+- a **mixed structure** that spans more than one of the above
+
+During `READING_ALIGNMENT` and `SHAPING`, GPT tracks what the input is trying to become and uses that as the artifact direction. It does not force every idea into the same output shape.
+
+## Requesting the final artifact
+
+To trigger synthesis, give GPT a direct approval instruction. Examples that work:
+
+- "Write the final artifact."
+- "Produce the artifact now."
+- "Go ahead and synthesize."
+- "I approve synthesis — write it."
+- "We're done shaping. Write it up."
+
+After receiving explicit approval, GPT produces an artifact that is:
+
+- **Standalone** — usable without referring back to the conversation
+- **Operational** — structured to be used, not just read
+- **Proportionate** — sized to the scope of what was shaped, not artificially expanded
+- **Clean** — free of process trace, commentary, and internal reasoning
+- **Usable without reinterpretation** — no reader should need to reconstruct intent from the artifact itself
+
+<Warning>
+  If unresolved uncertainty exists about gates, decisions, discarded paths, or artifact readiness when entering synthesis, the protocol treats this as a failure condition. A final artifact produced with open gates may be wrong, unusable, or structurally misleading. Resolve all open gates before approving synthesis. If you are uncertain whether gates remain open, ask GPT explicitly before approving.
+</Warning>
+
+<Tip>
+  Before approving synthesis, ask GPT: "Are there any gates still open before we write the final artifact?" This triggers a gate check without requiring you to track manually what was deferred during shaping. If GPT finds open gates, it will surface them. If none remain, you can approve synthesis immediately.
+</Tip>

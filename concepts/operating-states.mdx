@@ -1,0 +1,122 @@
+---
+title: "Operating States: READING_ALIGNMENT, SHAPING, SYNTHESIS"
+sidebarTitle: "Operating States"
+description: "Memory-Assisted Shaping uses three explicit operating states with strict entry and exit conditions to prevent premature synthesis and keep shaping separate from final artifact creation."
+---
+
+Memory-Assisted Shaping defines exactly three operating states. Every session move takes place inside one of them. State transitions are governed by real conditions — not GPT momentum, conversational flow, or perceived readiness. Skipping a state, collapsing two states together, or entering SYNTHESIS without explicit OP approval are protocol failure conditions.
+
+## READING_ALIGNMENT
+
+### When GPT enters this state
+
+GPT enters READING_ALIGNMENT at session start, at any re-entry into an existing session, or whenever new input requires source or gate alignment before shaping can proceed.
+
+### What GPT does in this state
+
+- Understands the input as given, without imposing structure prematurely
+- Separates declared material (stated by OP or a source) from inferred material (deduced by the model)
+- Detects candidate form — what the input is trying to become
+- Exposes material tension between active lenses
+- Identifies real gates that, if unresolved, would make a final artifact wrong, unusable, or structurally misleading
+
+### What memory signals are allowed
+
+Memory signals are allowed in READING_ALIGNMENT **only** for:
+
+- Declared constraints
+- Candidate form
+- Real gate discovery
+- Source-of-truth conflict
+- Material tension likely to affect later shaping
+
+### What is forbidden
+
+Final artifact production. READING_ALIGNMENT ends when the shape is understood, not when an artifact is ready.
+
+### When GPT exits this state
+
+GPT exits READING_ALIGNMENT when the candidate shape and real gates are clear enough to consolidate form without producing a final artifact.
+
+---
+
+## SHAPING
+
+### When GPT enters this state
+
+GPT enters SHAPING when the shape can be consolidated without final artifact production — that is, when READING_ALIGNMENT has produced enough clarity about the input, its candidate form, and its real gates.
+
+### What GPT does in this state
+
+- Consolidates form and resolves non-blocking friction
+- Surfaces or closes gates
+- Proposes reversible defaults where a gate does not require OP input
+- Removes overdesign — layers, sections, conventions, or signals that do not remove real ambiguity or prevent a real failure mode
+- Protects source of truth by keeping authority singular per concern
+- Prepares a possible artifact path, including artifact direction and boundaries
+
+### What memory signals are allowed
+
+Memory signals are allowed in SHAPING for:
+
+- Decisions (OP-confirmed)
+- Discarded paths likely to return
+- Real tensions that are material and likely to recur
+- Source-of-truth changes
+- Shape movement
+- Deferred gates
+- Artifact boundaries
+
+### What is forbidden
+
+Final drafting. SHAPING ends before any final artifact content is produced.
+
+### When GPT exits this state
+
+GPT exits SHAPING when gates are closed or deferred sufficiently for the current move, or when the OP explicitly approves synthesis.
+
+---
+
+## SYNTHESIS
+
+### When GPT enters this state
+
+GPT enters SYNTHESIS only when the OP **explicitly** approves artifact production.
+
+<Warning>
+  SYNTHESIS is the only state where GPT produces a final artifact. Implied momentum is not approval. Positive feedback is not approval. Silence is not approval. The OP must explicitly approve artifact production before GPT enters SYNTHESIS.
+</Warning>
+
+### What GPT does in this state
+
+- Produces the requested artifact from consolidated form
+- Preserves the shape as established during SHAPING — does not redesign while writing
+- Does not reopen closed gates unless a contradiction appears
+- Does not treat deferred gates as resolved
+- Does not place memory signals, process commentary, or raw shaping trace inside the artifact
+
+### What memory signals are allowed
+
+Before non-trivial synthesis, GPT appends an approved `mode` transition signal when persistence is active. Memory signals inform synthesis; they do not appear in the artifact as process trace.
+
+### What is forbidden
+
+Redesigning the shape while writing. The artifact is produced from consolidated form, not from re-shaping during output.
+
+### When GPT exits this state
+
+GPT exits SYNTHESIS when the requested artifact is fully produced, or when a blocking contradiction appears that prevents clean production.
+
+---
+
+## State transition summary
+
+| State | Enter when | Exit when | Memory action | Forbidden action |
+|---|---|---|---|---|
+| `READING_ALIGNMENT` | Session starts, re-entry occurs, or input needs source/gate alignment | Candidate shape and real gates are clear enough to shape | Append only declared constraints, candidate form, real gates, source conflicts, or material tension | Final artifact production |
+| `SHAPING` | Shape can be consolidated without final artifact production | Gates are closed or deferred enough for the current move, or OP explicitly approves synthesis | Append decisions, discarded paths, source changes, gate movement, artifact boundaries, or material recurring tension | Final drafting |
+| `SYNTHESIS` | OP explicitly approves artifact production | Requested artifact is produced or blocking contradiction appears | Append approved mode transition before non-trivial synthesis when persistence is active | Redesigning the shape while writing |
+
+<Tip>
+  When resuming a long or interrupted session, GPT re-enters `READING_ALIGNMENT` and runs `python3 -S ./notes.py summary` if persistence is active. This recovers the session's signal counts, last note ID, and last signal type without reading the full log. GPT then reads recent context with `tail` only if the summary is insufficient — and requests a full `export` only when OP explicitly asks for it or synthesis preparation requires consolidated state.
+</Tip>

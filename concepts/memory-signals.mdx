@@ -1,0 +1,108 @@
+---
+title: "Memory Signals: Append-Only Continuity for Shaping Sessions"
+sidebarTitle: "Memory Signals"
+description: "Memory signals are minimal typed records GPT appends to preserve continuity. Python owns persistence — GPT emits signals but never reads or rewrites the memory log during shaping."
+---
+
+Memory signals are minimal typed records appended to `session_notes.jsonl` only when omitting them would likely lose operational continuity across turns or session gaps. They exist to make later reinterpretation possible — to recover gates, decisions, discarded paths, shape movement, source boundaries, and artifact boundaries from the smallest possible payload. A memory signal is not a summary, not a working document, not artifact content, and not a progress report. If omitting a potential signal would not degrade continuity, the signal should not be emitted.
+
+<Note>
+  During live shaping, memory is write-only from GPT's perspective. GPT never reads the log after every turn. Readback — via `summary`, `tail`, or `export` — is triggered only by an OP request, an explicit checkpoint, re-entry into a session, or synthesis preparation that requires consolidated state.
+</Note>
+
+## What memory signals are NOT
+
+The protocol is explicit about what memory signals must not become:
+
+- **Model-managed notes** — the log is not a scratchpad for GPT's internal reasoning
+- **A working document** — shaping happens in conversation, not in the memory log
+- **Summaries** — signals preserve specific operational facts, not narrative overviews
+- **Artifact content** — no final artifact text, structure, or draft belongs in a memory signal
+- **Source of truth for the idea** — the OP's current instruction and the shaped conversation are authoritative; memory signals are continuity context only
+- **A checklist** — appending a signal for every completed step is a protocol failure condition
+- **Model self-commentary** — GPT does not use the log to describe its own reasoning process
+
+## When to emit
+
+### Strong triggers — append required when Python persistence is available
+
+These conditions require a memory signal:
+
+- **OP-confirmed decision** — a decision that was explicitly accepted by the OP, not merely proposed
+- **Real gate opened, deferred, or closed** — any gate status change that affects artifact direction
+- **Discarded path likely to return** — a direction that was rejected but could plausibly be re-raised later
+- **Source-of-truth change** — a shift in which system, file, or authority owns a concern
+- **Artifact boundary** — a confirmed boundary on what the final artifact includes or excludes
+- **Approved mode transition toward SYNTHESIS** — before non-trivial synthesis begins
+
+### Conditional trigger
+
+**Material tension** requires a signal only when it is both material (it changes form, constraint, source of truth, runtime, lifecycle, evidence requirement, gate status, or final output) and likely to recur. Tension that does not change operability is noise and does not generate a signal.
+
+## When NOT to emit
+
+Do not emit memory signals for:
+
+- Cosmetic preference — formatting, naming, visual layout choices with no structural effect
+- Naming noise — identifier or label choices that do not change any real gate axis
+- Unconfirmed examples — examples the OP has offered but not confirmed as structural constraints
+- Ordinary conversation — exchanges that advance understanding but do not create a retention risk
+- Repeated information — material already preserved in a prior signal
+- Material already captured — anything recoverable from prior signals without ambiguity
+- Checklist completion — marking steps done
+- Model self-commentary — GPT describing its own shaping behavior or reasoning
+
+## Signal structure
+
+GPT sends a minimal live signal to Python using the append command:
+
+```bash
+python3 -S ./notes.py append --type <type> --text "<text>"
+```
+
+The `--effect` flag is used only when the effect changes later shaping or synthesis:
+
+```bash
+python3 -S ./notes.py append --type <type> --text "<text>" --effect "<effect>"
+```
+
+**GPT provides:** `type`, `text`, and optionally `effect`. GPT does not send full reasoning, schema-complete records, or read the note file before appending.
+
+**Python adds:** `id`, `ts` (UTC timestamp), `session_id`, `seq` (sequence number), and `checksum` (a 16-character SHA-256 prefix over the record's stable fields). Python appends the completed record to `session_notes.jsonl` as a single compact JSON line and returns a short receipt.
+
+A completed record in the log looks like this:
+
+```json
+{
+  "id": "n00001",
+  "ts": "2025-01-15T10:23:45Z",
+  "session_id": "a1b2c3d4-...",
+  "seq": 1,
+  "type": "decision",
+  "text": "The final artifact is separate from shaping notes.",
+  "checksum": "a1b2c3d4e5f6a1b2"
+}
+```
+
+The receipt returned to GPT contains only `ok`, `note_id`, `seq`, and `path`. GPT surfaces a minimal OP-facing marker after a successful append (`Memory: <type> appended.`) and hides the receipt details unless they are useful or OP requests them.
+
+<Tip>
+  Keep signals minimal — use the smallest payload sufficient for later reinterpretation under the protocol. The signal does not carry full reasoning. It carries only what is needed to recover gate status, decision state, shape movement, or artifact boundaries if the session is interrupted and resumed.
+</Tip>
+
+## The eight signal types
+
+All eight allowed signal types are defined in the protocol. Each maps to a specific category of operational continuity:
+
+| Type | Used for |
+|---|---|
+| `mode` | A state transition — specifically an approved transition toward SYNTHESIS. Appended before non-trivial synthesis when persistence is active. |
+| `shape` | Shape movement — a meaningful change in what the input is consolidating toward, including changes to the candidate artifact family or structure. |
+| `gate` | Real gate events — a gate being opened, classified, deferred, or closed. Captures gate type and status so deferred gates are not inadvertently treated as resolved. |
+| `decision` | An OP-confirmed decision — a choice explicitly accepted by OP that affects form, constraint, source of truth, or artifact direction. |
+| `discard` | A discarded path likely to return — a direction that was considered and rejected, preserved so it can be recognized if it re-emerges. |
+| `tension` | Material recurring tension — a real conflict between active lenses that is material and likely to recur, preserved so it is not re-litigated as if new. |
+| `source` | A source-of-truth change — a shift in which system, file, or authority is authoritative for a concern. |
+| `artifact` | An artifact boundary — a confirmed boundary on what the final artifact includes or excludes, preventing scope drift during SYNTHESIS. |
+
+If a signal does not fit one of these eight types, it should not be appended. The protocol does not permit custom or free-form signal types in v0.
